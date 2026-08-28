@@ -1,0 +1,96 @@
+\documentclass[12pt, a4paper]{article}
+
+% ─── Paquetes ────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-noquoting]{babel}
+
+% Secciones
+\usepackage{titlesec}
+\newcommand{\sectionbreak}{\clearpage}
+
+% Matemáticas
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+\usepackage{bm}
+
+% Diseño de página
+\usepackage[top=2.5cm, bottom=2.5cm, left=3cm, right=2.5cm]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+
+% Figuras y tablas
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{caption}
+\usepackage{subcaption}
+
+% Cabeceras
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Computación Concurrente}
+\fancyhead[R]{\small Introducción al Cómputo Concurrente}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    {\bfseries\LARGE Universidad Nacional Autónoma de México \par}
+    \vspace{0.5cm}
+    {\scshape\Large Facultad de Ciencias \par}
+    \vspace{0.5cm}
+    {\bfseries\large Ciencias de la Computación \par}
+    \vspace{1cm}
+    
+    \includegraphics[width=0.3\textwidth]{imgs/unam_logo.png}\par
+    \vspace{1cm}
+
+    {\Large Criptografía y Seguridad}
+    \vspace{1cm}
+
+    \rule{\linewidth}{0.5mm}\\[0.4cm]
+    {\Huge\bfseries Práctica 1\par}
+    \vspace{0.5cm}
+    {\Large\bfseries Cifrados Clásicos \par}
+    \vspace{0.5cm}
+    \rule{\linewidth}{0.5mm}\\[0.4cm]
+    
+    {\Large Aguirre Cruz Cassandra - \par}
+    {\Large González Téllez Lorena - 321288952 \par}
+    {\Large Vázquez Rincón Oscar -  \par}
+    
+    \vfill
+    
+    {\large \today \par}
+    
+\end{titlepage}
+
+% -------------------------------------------------------------------------------------------------------------------
+
+\section{Introducción}
+
+\section{Desarrollo}
+
+\subsection{Preguntas}
+
+\begin{enumerate}
+    \item ¿Cuántos primos relativos hay en $\mathbb{Z}_{256}$?
+    \item Sea $f:\mathbb{Z}_{n}\rightarrow\mathbb{Z}_{n}$ tal que $f(i)=k \cdot i$ para $i\in A$ con $A$ un alfabeto cualquiera. ¿Qué se debe cumplir para que $f$ sea una función biyectiva?
+    \item ¿Cuántas posibles combinaciones no triviales existen para cifrar bytes con César, Decimado y Afín?
+    \item ¿Por qué el sistema de archivos de UNIX, aunque un archivo tenga una extensión diferente (o incluso no tenga), sigue reconociendo al archivo original?
+    \item ¿Por qué los archivos descifrados tienen exactamente el mismo tamaño que antes de cifrar, pero no pudimos leerlos? ¿Por qué no tuvimos que agregar/quitar nada?
+    \item Ya que Base64 no es un cifrado, sino codificación, ¿en qué casos podemos usarlo?
+\end{enumerate}
+
+\section{Conclusiones}
+
+\section{Referencias}
+
+\end{document}
