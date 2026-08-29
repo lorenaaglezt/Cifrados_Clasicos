@@ -81,7 +81,38 @@
 \subsection{Preguntas}
 
 \begin{enumerate}
+
     \item ¿Cuántos primos relativos hay en $\mathbb{Z}_{256}$?
+
+Primero conviene recordar que dos enteros $a, b \in \mathbb{Z}$ son primos relativos si su máximo común divisor
+es 1, es decir, si $\gcd(a,b) = 1$.
+
+Por otro lado, $\mathbb{Z}_m$ denota al conjunto de todas las clases de equivalencia diferentes módulo $m$. Donde
+cada clase de equivalencia se define como $[z]_m = \{x \in \mathbb{Z} | z \equiv x \pmod{m}\}$.
+
+Después de estos recordatorios, para poder contar los primos relativos en $\mathbb{Z}_{256}$ podemos usar la
+función indicatriz de Euler. Si $n \in \mathbb{N}$, entonces $\phi(n)$ se define como el número de enteros
+positivos menores o iguales a $n$ y coprimos con $n$, es decir, formalmente se puede definir como:
+
+\[
+\phi(n) = |\{m \in \mathbb{N} \mid m \le n \land \gcd(m, n) = 1\}|
+\]
+
+Dentro de las propiedades que nos ofrece la función indicatriz de Euler encontramos que:
+
+\[
+\phi(p^k) = (p-1)p^{k-1}\ \text{si } p \text{ es un número primo y } k \in \mathbb{N}
+\]
+
+Dado que queremos contar los primos relativos en $\mathbb{Z}_{256}$, conviene ver  que $256 = 2^8$. Por lo que $p=2$ y 
+$k=8$ en la propiedad que acabamos de enunciar. Aplicando la fórmula:
+
+\[
+\phi(2^8) = (2-1)2^{8-1} = 1 \cdot 2^7 = 128
+\]
+
+Esto nos muestra que existen 128 primos relativos en $\mathbb{Z}_{256}$.
+
     \item Sea $f:\mathbb{Z}_{n}\rightarrow\mathbb{Z}_{n}$ tal que $f(i)=k \cdot i$ para $i\in A$ con $A$ un alfabeto cualquiera. ¿Qué se debe cumplir para que $f$ sea una función biyectiva?
     \item ¿Cuántas posibles combinaciones no triviales existen para cifrar bytes con César, Decimado y Afín?
     \item ¿Por qué el sistema de archivos de UNIX, aunque un archivo tenga una extensión diferente (o incluso no tenga), sigue reconociendo al archivo original?
