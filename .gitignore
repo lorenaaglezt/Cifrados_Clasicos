@@ -1,3 +1,4 @@
+# LaTeX
 *.aux
 *.bbl
 *.bcf
@@ -9,3 +10,17 @@
 *.run.xml
 *.synctex.gz
 *.toc
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.env
+
+# Archivos de sistema / IDE
+.DS_Store
+.vscode/
+.idea/
