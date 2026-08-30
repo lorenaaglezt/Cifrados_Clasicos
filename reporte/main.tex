@@ -76,7 +76,29 @@
 
 \section{Introducción}
 
+La criptografía es la ciencia encargada de diseñar funciones o dispositivos capaces de transformar mensajes legibles
+o en claro a mensajes cifrados de tal manera que dicha transformación (cifrar) y su transformación inversa (descifrar)
+sólo pueden ser factibles con el conocimiento de una o más llaves. En la criptografía existen dos tipos de cifrados: los simétricos, en donde la misma llave se usa para cifrar y descifrar, y los asimétricos, 
+en donde se utilizan dos llaves distintas. Esta práctica se centra en los cifrados simétricos.
+
+Los cifrados clásicos son aquellos que han tenido un uso histórico masivo, pero que hoy en día no se consideran
+seguros, pues han surgido técnicas modernas más sofisticadas a lo largo del tiempo.
+
+Esta práctica tiene como objetivo implementar algunos de estos cifrados clásicos y aplicarlos para el cifrado y el
+descifrado de archivos. El desarrollo de la misma implica trabajar directamente a nivel de bytes y realizar corrimientos correspondientes según el cifrado empleado. El enfoque se centra en el cifrado César, el cifrado
+decimado, el cifrado afín y la codificación Base64. Para poder descifrar los archivos sin conocer
+la llave de antemano, se hace uso de las firmas de archivo o Magic Bytes. Se busca combinar este conocimiento con las propiedades 
+matemáticas de los cifrados para deducir la llave correcta y recuperar los archivos originales.
+
+La importancia de esta práctica radica en comprender la base y los cimientos de lo que es la
+criptografía moderna. Saber aplicar estos cifrados clásicos permite construir bases sólidas sobre el origen de la disciplina,
+aplicando congruencias y aritmética modular. Por otro lado, el enfrentarse a un escenario de descifrado, como el que plantea 
+esta práctica, nos permite desarrollar conocimientos sobre el manejo de bytes y las firmas de archivo.
+
+
 \section{Desarrollo}
+
+% -------------------------------------------------------------------------------------------------------------------
 
 \subsection{Preguntas}
 
@@ -88,14 +110,18 @@ Primero conviene recordar que dos enteros $a, b \in \mathbb{Z}$ son primos relat
 es 1, es decir, si $\gcd(a,b) = 1$.
 
 Por otro lado, $\mathbb{Z}_m$ denota al conjunto de todas las clases de equivalencia diferentes módulo $m$. Donde
-cada clase de equivalencia se define como $[z]_m = \{x \in \mathbb{Z} | z \equiv x \pmod{m}\}$.
+cada clase de equivalencia se define como $[z]_m = \{x \in \mathbb{Z} \mid z \equiv x \pmod{m}\}$. De este modo, cuando
+hablamos de $\mathbb{Z}_{256}$ nos referimos a un conjunto con $256$ elementos, es decir:
+\[
+\mathbb{Z}_{256} = \{[0]_{256}, [1]_{256}, [2]_{256}, \dots, [255]_{256}\}
+\]
 
 Después de estos recordatorios, para poder contar los primos relativos en $\mathbb{Z}_{256}$ podemos usar la
 función indicatriz de Euler. Si $n \in \mathbb{N}$, entonces $\phi(n)$ se define como el número de enteros
 positivos menores o iguales a $n$ y coprimos con $n$, es decir, formalmente se puede definir como:
 
 \[
-\phi(n) = |\{m \in \mathbb{N} \mid m \le n \land \gcd(m, n) = 1\}|
+\phi(n) = |\{m \in \mathbb{N} \mid 1 \le m \le n \land \gcd(m, n) = 1\}|
 \]
 
 Dentro de las propiedades que nos ofrece la función indicatriz de Euler encontramos que:
@@ -104,8 +130,8 @@ Dentro de las propiedades que nos ofrece la función indicatriz de Euler encontr
 \phi(p^k) = (p-1)p^{k-1}\ \text{si } p \text{ es un número primo y } k \in \mathbb{N}
 \]
 
-Dado que queremos contar los primos relativos en $\mathbb{Z}_{256}$, conviene ver  que $256 = 2^8$. Por lo que $p=2$ y 
-$k=8$ en la propiedad que acabamos de enunciar. Aplicando la fórmula:
+Dado que queremos contar los primos relativos en $\mathbb{Z}_{256}$, conviene ver que $256 = 2^8$. Por lo que $p=2$ 
+(pues $2$ es primo) y $k=8 \in \mathbb{N}$ en la propiedad que acabamos de enunciar. Aplicando la fórmula:
 
 \[
 \phi(2^8) = (2-1)2^{8-1} = 1 \cdot 2^7 = 128
@@ -113,14 +139,64 @@ $k=8$ en la propiedad que acabamos de enunciar. Aplicando la fórmula:
 
 Esto nos muestra que existen 128 primos relativos en $\mathbb{Z}_{256}$.
 
+
+
+
     \item Sea $f:\mathbb{Z}_{n}\rightarrow\mathbb{Z}_{n}$ tal que $f(i)=k \cdot i$ para $i\in A$ con $A$ un alfabeto cualquiera. ¿Qué se debe cumplir para que $f$ sea una función biyectiva?
+
+Por definición, para que $f$ sea biyectiva debe cumplirse que sea inyectiva y sobreyectiva al mismo tiempo.
+
+\textbf{Inyectividad:} Para que $f$ sea inyectiva debe cumplirse que no hay dos elementos del dominio
+que tengan la misma imagen, es decir, para $a,b \in \mathbb{Z}_n$, si $f(a) = f(b)$, entonces $a=b$.
+
+Supongamos primero que para $a,b \in \mathbb{Z}_n$, $f(a)=f(b)$, es decir, $[k \cdot a]_n = [k \cdot b]_n$.
+Recordando que dos clases de equivalencia son iguales si y sólo si sus representantes son congruentes
+módulo $n$ ($[x]_n = [y]_n \iff x \equiv y \pmod{n}$) tenemos que $ka \equiv kb \pmod{n}$, lo cual
+es equivalente a:
+\[
+k(a - b) \equiv 0 \pmod{n}
+\]
+es decir, $n \mid k(a-b)$ (por definición de congruencia). Aquí es importante mencionar que buscamos cancelar el 
+factor $k$ para que se cumpla que $n \mid (a-b)$, que por definición de congruencia implicaría $a \equiv b \pmod{n}$.
+
+Para este propósito, recurrimos al Lema de Euclides donde si $n \mid k \cdot m$ y $\gcd(k,n)=1$, entonces $n \mid m$.
+
+De esta manera, si se cumple que $\gcd(k,n)=1$, podemos concluir que $n \mid (a-b)$, es decir, $a \equiv b \pmod{n}$, 
+lo que en $\mathbb{Z}_n$ significa que $[a]_n = [b]_n$, por lo tanto $a = b$ y $f$ es inyectiva.
+
+\textbf{Observación:} La condición $\gcd(k,n)=1$ es la hipótesis que necesitamos para que el argumento sea válido.
+Si en cambio $\gcd(k, n) = d > 1$, entonces existe $m = n/d$ con $0 < m < n$ tal que $k \cdot m \equiv 0 \pmod{n}$.
+Esto se debe a que $d \mid k$ (pues $d = \gcd(k,n)$), por lo que $k = d \cdot q$ para algún $q \in \mathbb{Z}$, y entonces
+$k \cdot m = d \cdot q \cdot (n/d) = q \cdot n$, que es claramente múltiplo de $n$. Esto implica $f(m) = [k \cdot m]_n = [0]_n = f(0)$
+con $m \neq 0$, por lo que $f$ no sería inyectiva y, por tanto, no sería biyectiva.
+
+\textbf{Sobreyectividad:} Para que $f$ sea sobreyectiva debe cumplirse que todo elemento del codominio
+$\mathbb{Z}_n$ es imagen de algún elemento del dominio, es decir, para todo $j \in \mathbb{Z}_n$
+existe $i \in \mathbb{Z}_n$ tal que $f(i) = j$.
+
+Ahora bien, si $\gcd(k, n) = 1$, entonces $k$ es invertible en $\mathbb{Z}_n$, es decir, existe
+$k^{-1} \in \mathbb{Z}_n$ tal que $k \cdot k^{-1} \equiv 1 \pmod{n}$. Dado un elemento cualquiera
+$j \in \mathbb{Z}_n$, basta tomar $i = k^{-1} \cdot j \in \mathbb{Z}_n$, pues:
+\[
+f(i) = k \cdot (k^{-1} \cdot j) = (k \cdot k^{-1}) \cdot j \equiv 1 \cdot j \equiv j \pmod{n}
+\]
+Así, todo elemento de $\mathbb{Z}_n$ tiene preimagen y $f$ es sobreyectiva.
+
+$\therefore$ La condición necesaria y suficiente para que $f(i)=k \cdot i$ sea una función
+biyectiva en $\mathbb{Z}_n$ es que $\gcd(k, n) = 1$, es decir, que $k$ y $n$ sean primos relativos.
+
+
     \item ¿Cuántas posibles combinaciones no triviales existen para cifrar bytes con César, Decimado y Afín?
     \item ¿Por qué el sistema de archivos de UNIX, aunque un archivo tenga una extensión diferente (o incluso no tenga), sigue reconociendo al archivo original?
     \item ¿Por qué los archivos descifrados tienen exactamente el mismo tamaño que antes de cifrar, pero no pudimos leerlos? ¿Por qué no tuvimos que agregar/quitar nada?
     \item Ya que Base64 no es un cifrado, sino codificación, ¿en qué casos podemos usarlo?
 \end{enumerate}
 
+% -------------------------------------------------------------------------------------------------------------------
+
 \section{Conclusiones}
+
+% -------------------------------------------------------------------------------------------------------------------
 
 \section{Referencias}
 
