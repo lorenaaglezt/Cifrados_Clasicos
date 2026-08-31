@@ -15,10 +15,22 @@ MAGIC_BYTES_HEX = {
 }
 
 def detectar_formato(data: bytes) -> str | None:
-    primer= data.read(4)
-    hexbytes= primer.hex()
-    res= MAGIC_BYTES_HEX.get(hexbytes)
-    return res
+    if hasattr(data, 'read'):
+        start_pos = data.tell() if hasattr(data, 'tell') else 0
+        bytes_data = data.read(16)
+        if hasattr(data, 'seek'):
+            data.seek(start_pos)
+    else:
+        bytes_data = data[:16]
+    
+    hexbytes = bytes_data.hex()
+    
+    
+    for magic_hex, formato in MAGIC_BYTES_HEX.items():
+        if hexbytes.startswith(magic_hex):
+            return formato
+    
+    return None
 def es_archivo_valido(data: bytes, formato_esperado: str) -> bool:
     formato_detectado = detectar_formato(data)
     return formato_detectado == formato_esperado
