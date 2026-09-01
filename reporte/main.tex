@@ -188,9 +188,16 @@ biyectiva en $\mathbb{Z}_n$ es que $\gcd(k, n) = 1$, es decir, que $k$ y $n$ sea
 
     \item ¿Cuántas posibles combinaciones no triviales existen para cifrar bytes con César, Decimado y Afín?
     \begin{itemize}
-        \item  
+        \item \textbf{César:} 255 combinaciones no triviales (256 en total, menos la clave trivial $k=0$).
+        \item \textbf{Decimado:} 127 combinaciones no triviales (128 números impares coprimos con 256, menos la clave trivial $a=1$).
+        \item \textbf{Afín:} 32,767 combinaciones no triviales ($128 \times 256 = 32,768$ en total, menos la clave trivial $a=1, b=0$).
     \end{itemize}
     \item ¿Por qué el sistema de archivos de UNIX, aunque un archivo tenga una extensión diferente (o incluso no tenga), sigue reconociendo al archivo original?
+    \begin{itemize}
+    \item UNIX inspecciona el interior del archivo usando los primeros bytes para leer su firma digital, la cual indica el tipo de archivo real. Tambien los metadatos y datos físicos residen todavia. 
+    El nombre del archivo y su extensión son solo una etiqueta visual para el usuario que apunta a este.\\
+
+    \end{itemize}
     \item ¿Por qué los archivos descifrados tienen exactamente el mismo tamaño que antes de cifrar, pero no pudimos leerlos? ¿Por qué no tuvimos que agregar/quitar nada?
     \item Ya que Base64 no es un cifrado, sino codificación, ¿en qué casos podemos usarlo?
 \end{enumerate}
