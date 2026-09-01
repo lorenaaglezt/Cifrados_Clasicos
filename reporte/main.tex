@@ -98,6 +98,165 @@ esta práctica, nos permite desarrollar conocimientos sobre el manejo de bytes y
 
 \section{Desarrollo}
 
+El desarrollo de esta práctica consta de distintas etapas: los cifrados, las firmas de los archivos y el manejo de bytes.
+
+\subsection{Cifrados}
+
+\textbf{Base64}
+
+Correspondiente a la codificación Base64 se implementó el archivo \texttt{base64\_codec.py}, el cual funciona como codificador
+y decodificador Base64. Primero, la función \texttt{base64\_encode} se encarga de transformar los datos originales en su representación
+Base64, en nuestra implementación se espera operar sobre la secuencia de bits ya representada como cadena de texto. Es importante
+notar que la información de codifica en bloques de 6 bits y de ser necesario se reagrupa la secuencia completa de bits para poder
+mapear cada bloque a un valor numérico entre 0 y 63, que luego se traduce a un carácter del alfabeto definido (la variable \texttt{CARACTERES}).
+
+Además, los caracteres sobrantes al final se sustituyen por '=' que fueron los de relleno en la reorganización de la secuencia de bits.
+
+Por otro lado, la función \texttt{base64\_decode} hace lo inverso y permite recuperar los datos originales. Contrario a la codificación,
+se eliminan los '=' y para cada carácter válido se encuentra su posición dentro del alfabeto definido para Base64 y se traduce a su 
+equivalente de seis bits. Estos bloques se concatenan de forma que constituyen la cadena binaria completa. Nuevamente se reagrupan
+para formar la secuencia de bytes original (que constan de 8 bits y no 6).
+
+Ambas funciones trabajan de manera que deben garantizar que la información se transforme y recupere de manera íntegra.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{imgs/base64_encode.png}
+        \caption{Codificación Base64}
+        \label{fig:base64_encode}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{imgs/base64_decode.png}
+        \caption{Decodificación Base64}
+        \label{fig:base64_decode}
+    \end{subfigure}
+    \caption{Proceso de codificación y decodificación en Base64.}
+    \label{fig:base64}
+\end{figure}
+
+\subsection{Firmas de Archivos}
+
+Para esta etapa de la práctica se implementó el archivo \texttt{magic\_bytes.py} que tiene como propósito la identificación del formato real de
+un archivo a partir de su contenido binario. Dado que las extensiones de los archivos pueden ser modificadas, los formatos binarios incluyen
+al inicio del archivo una secuencia fija de bytes que facilitan la identificación.
+
+Definimos un diccionario \texttt{MAGIC\_BYTES\_HEX} que mapea la representación hexadecimal de cada firma a su formato. Mediante la función
+\texttt{detectar\_formato} comparamos el contenido del archivo con las firmas conocidas. Ya sea que se reciba un flujo de datos
+o una secuencia de bytes, se leen únicamente los primeros 16 bytes del archivo, los cuales pueden contener cualquiera de las firmas
+registradas.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{imgs/magic_bytes.png}
+    \caption{Diccionario de firmas de archivos en \texttt{magic\_bytes.py}.}
+    \label{fig:magic_bytes}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{imgs/detectar_formato.png}
+    \caption{Implementación de la función \texttt{detectar\_formato}.}
+    \label{fig:detectar_formato}
+\end{figure}
+
+Una observación importante es que los formatos WAV y AVI comparten los mismos 4 bytes iniciales, \texttt{52 49 46 46}, por lo que no es posible distinguirlos
+únicamente con el encabezado principal. Para ello, cuando se detecta la firma RIFF se inspeccionan los bytes 8 a 11 del archivo y se identifican
+correctamente estos formatos.
+
+Por otro lado, \texttt{es\_archivo\_valido} fue implementada para verificar si un archivo corresponde a un formato específico. En lugar de
+indicar qué formato fue detectado, devuelve un valor booleano que confirma si el resultado coincide con el formato esperado (esto porque
+no podemos confiarnos de la extensión que vemos superficialmente).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{imgs/es_archivo_valido.png}
+    \caption{Implementación de la función \texttt{es\_archivo\_valido}.}
+    \label{fig:es_archivo_valido}
+\end{figure}
+
+\subsection{Manipulación de bytes}
+
+Por último, \texttt{archivos\_bytes.py} fue implementado para manejar las operaciones de entrada y salida a nivel de bytes,
+sirviendo de soporte para los cifrados, la codificación Base64 y la detección de formatos. Define tres funciones:
+
+\begin{itemize}
+    \item \texttt{leer\_archivo(ruta)}: Verifica que el archivo exista en la ruta indicada y, de ser así, lo abre en
+    modo binario y devuelve su contenido completo como una secuencia de bytes.
+
+    \item \texttt{escribir\_bytes\_archivo(ruta, contenido)}: Recibe una secuencia de bytes y la escribe en el archivo
+    de destino. Si el directorio especificado en la ruta no existe, lo crea automáticamente antes de escribir.
+
+    \item \texttt{guardar\_descifrado(descifrado, nombre, extension)}: Construye la ruta de salida con el formato
+    \texttt{<nombre>\_descifrado.<extension>}, invoca a \texttt{escribir\_bytes\_archivo} para guardar el contenido
+    y retorna la ruta completa del archivo generado.
+\end{itemize}
+
+\subsection{Flujo de Trabajo}
+
+Como resultado de las implementaciones anteriores, se diseñó el programa \texttt{main.py} que integra todos los módulos para
+intentar descifrar un archivo cuyo método de cifrado y llave son desconocidos. El programa aplica un enfoque de
+fuerza bruta, esto es, prueba distintos algoritmos de descifrado sobre el contenido binario del archivo y,
+tras cada intento, verifica si el resultado tiene una firma de archivo reconocida.
+
+\subsubsection*{Funciones auxiliares}
+
+Para mantener el código organizado, se definieron funciones auxiliares que encapsulan tareas repetitivas:
+
+\begin{itemize}
+    \item \texttt{guardar(datos, nombre\_base, formato)}: Crea el directorio de salida si no existe y escribe el
+    archivo descifrado asignándole el nombre \texttt{<nombre\_base>\_descifrado.<formato>}. Retorna la ruta del
+    archivo guardado.
+
+    \item \texttt{verificar(datos)}: Envuelve la llamada a \texttt{detectar\_formato} de \texttt{magic\_bytes.py}.
+    Recibe la secuencia de bytes resultante de un intento de descifrado y devuelve el formato detectado,
+    o \texttt{None} si no coincide ninguna firma conocida.
+
+    \item \texttt{resultado(cifrado, llave, formato, ruta)}: Imprime en consola el resumen del descifrado exitoso:
+    el nombre del algoritmo utilizado, la llave encontrada, el formato del archivo recuperado y la ruta donde fue guardado.
+\end{itemize}
+
+\subsubsection*{Descifrado por fuerza bruta}
+
+Cada método de descifrado se implementó de manera independiente.
+El espacio de búsqueda de cada método es el siguiente:
+
+\begin{itemize}
+    \item \textbf{Base64} (\texttt{base64\_fuerza\_bruta}): No hay llave que iterar. Se interpreta el contenido del
+    archivo como texto ASCII, se decodifica con \texttt{base64\_decode} y se verifica el resultado.
+
+    \item \textbf{César} (\texttt{cesar\_fuerza\_bruta}): El cifrado César sobre bytes aplica el corrimiento
+    $C_i = (P_i + k) \bmod 256$, por lo que el espacio de llaves es $k \in \{0, 1, \dots, 255\}$, es decir,
+    256 posibles llaves.
+
+    \item \textbf{Decimado} (\texttt{decimado\_fuerza\_bruta}): El cifrado de decimación opera como
+    $C_i = (a \cdot P_i) \bmod 256$. Para que la función sea invertible, $a$ debe ser coprimo con 256
+    (es decir, $\gcd(a, 256) = 1$). Dado que $256 = 2^8$, los valores válidos de $a$ son los impares en
+    $\{1, \dots, 255\}$, lo que da $\phi(256) = 128$ llaves posibles. Estos valores se precomputan al
+    inicio del programa en la lista \texttt{LLAVES\_DECIMADO}.
+
+    \item \textbf{Afín} (\texttt{afin\_fuerza\_bruta}): El cifrado afín combina los dos anteriores:
+    $C_i = (a \cdot P_i + c) \bmod 256$. El espacio de búsqueda es el producto cartesiano de las 128
+    llaves válidas de $a$ (coprimas con 256) y los 256 valores posibles de $c$, lo que resulta en
+    $128 \times 256 = 32\,768$ combinaciones.
+\end{itemize}
+
+\subsubsection*{Proceso principal}
+
+Con todas las implementaciones anteriores, se valida que la ruta recibida
+corresponde a un archivo existente y se lee su contenido binario. Luego itera sobre
+los métodos disponibles y ejecuta cada uno en secuencia hasta que uno termine exitosamente.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{imgs/descifrar_archivo.png}
+    \caption{Función principal \texttt{descifrar\_archivo} que orquesta el proceso.}
+    \label{fig:descifrar_archivo}
+\end{figure}
+
 % -------------------------------------------------------------------------------------------------------------------
 
 \subsection{Preguntas}

@@ -1,5 +1,13 @@
-##
 def base64_encode(data: bytes) -> str:
+    """
+    Codifica datos a Base64
+
+    Args:
+        data: Datos a codificar
+
+    Returns:
+        Datos codificados a Base64
+    """
     CARACTERES = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
     completo= len(data)%3
     p= 0 if completo == 0 else(3 - completo)
@@ -13,7 +21,17 @@ def base64_encode(data: bytes) -> str:
     if p>0:
         res=res[:-p]+("="*p)
     return res
+
 def base64_decode(encoded: str) -> bytes:
+    """
+    Decodifica datos de Base64
+
+    Args:
+        encoded: Datos codificados a Base64
+
+    Returns:
+        Datos decodificados
+    """
     word = encoded.replace("=", "")
     CARACTERES = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
     res = ""
