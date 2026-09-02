@@ -211,10 +211,6 @@ Para mantener el código organizado, se definieron funciones auxiliares que enca
     archivo descifrado asignándole el nombre \texttt{<nombre\_base>\_descifrado.<formato>}. Retorna la ruta del
     archivo guardado.
 
-    \item \texttt{verificar(datos)}: Envuelve la llamada a \texttt{detectar\_formato} de \texttt{magic\_bytes.py}.
-    Recibe la secuencia de bytes resultante de un intento de descifrado y devuelve el formato detectado,
-    o \texttt{None} si no coincide ninguna firma conocida.
-
     \item \texttt{resultado(cifrado, llave, formato, ruta)}: Imprime en consola el resumen del descifrado exitoso:
     el nombre del algoritmo utilizado, la llave encontrada, el formato del archivo recuperado y la ruta donde fue guardado.
 \end{itemize}
