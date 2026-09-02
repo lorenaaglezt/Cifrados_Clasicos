@@ -63,9 +63,107 @@ def inverso_modular(a: int, m:int) -> int:
         raise ValueError("Si no existe el inverso modular")
     return x0 % m_original
 
-"""PRUEBA:
+"""
+PRUEBA:
 print("Inverso de 3:", inverso_modular(3, 256))
 assert inverso_modular(3, 256) == 171
 print("Si funciona")
 """
 
+def decimado_cifrar(data: bytes, a: int) -> bytes:
+    """
+    Cifra los bytes usando el cifrado decimado
+    Cada byte e multiplica por la llave a y el resultado se calcula módula 256.
+    Params:
+        data (bytes): Lo que se quiere cifrar.
+        a (int): Llaave usada para multiplicar los bytes.
+    Returns:
+        bytes: Contenido cifrado.
+    Raises:
+        ValueError: Si la llave no tiene inverso modular y por lo mismo el cifrado  no es reversible.
+    """
+    a = a % 256
+    #Verificamos que a tenga inverso modular.
+    inverso_modular(a, 256)
+    resultado = bytes((byte * a) % 256 for byte in data)
+    return resultado
+
+def decimado_descifrar(data: bytes, a: int) -> bytes:
+    """
+    Descifra los bytes usando el cifrado decimado.
+    Para recuperar los bytes originales se utiliza el inverso modular de la llave a módulo 256
+    Params:
+        data (bytes): Lo que se quiere descifrar.
+        a (int): Llave usada durante el cifrado.
+    Returns:
+          bytes: Contenido cifrado.
+    Raises:
+          ValueError: Si la llave no tiene inverso modular.
+    """
+    a = a % 256
+    #Se calcula el inverso modular de la llave
+    inverso = inverso_modular(a, 256)
+    resultado = bytes((byte * inverso) % 256 for byte in data)
+    return resultado
+
+"""
+PRUEBA:
+data = bytes ([10, 20, 30])
+cifrado = decimado_cifrar(data, 3)
+descifrado = decimado_decifrar(cifrado, 3)
+print("Original: ", data)
+print("Cifrado:", cifrado)
+print("Descifrado: ", descifrado)
+assert descifrado == data
+print("Si funciona")
+"""
+
+def afin_cifrar(data: bytes, a: int, b: int) ->  bytes:
+    """
+    Cifra los bytes usando el cifrado Afín.
+    Cada byte se multiplica por a, se suma b y el resultado se calcula módulo 256.
+    Params:
+        data (bytes): Lo que se quiere cifrar.
+        a (int): Llave usada para multiplicar los bytes.
+        b (int): Llave usada para sumar los bytes o el desplazamiento.
+    Returns:
+        bytes: Contenido cifrado.
+    Raises:
+        ValueError: Si la llave no tiene inverso modular.
+    """
+    a = a % 256
+    b = b % 256
+    #Verificamos que a tenga inverso modular
+    inverso_modular(a, 256)
+    resultado = bytes((a * byte + b) % 256 for byte in data)
+    return resultado
+
+def afin_descifrar(data: bytes, a: int, b: int) -> bytes:
+    """
+    Descifra los bytes usando el cifrado Afín
+    Params:
+        data (bytes): Lo que se quiere cifrar.
+        a (int): Llave usada para multiplicar los bytes.
+        b (int): Llave usada para sumar los bytes o el desplazamiento.
+    Returns:
+         bytes: Contenido descifrado.
+    Raises:
+        ValueError: Si la llave no tiene inverso modular.
+    """
+    a = a % 256
+    b = b % 256
+    #Calculamos el inverso modular de a
+    inverso = inverso_modular(a, 256)
+    resultado = bytes((inverso * (byte - b)) % 256 for byte in data)
+    return resultado
+"""
+PRUEBA:
+data = bytes ([10, 20, 30])
+cifrado = afin_cifrar(data, 3, 5)
+descifrado = afin_descifrar(cifrado, 3, 5)
+print("Original: ", data)
+print("Cifrado:", cifrado)
+print("Descifrado:", descifrado)
+assert descifrado == data
+print("Si funciona")
+"""
