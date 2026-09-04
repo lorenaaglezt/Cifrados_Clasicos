@@ -4,18 +4,16 @@ from pathlib import Path
 
 from archivos_bytes import leer_archivo
 from magic_bytes import detectar_formato
-from base64_codec import base64_decode
+from base64 import base64_decode
 
-from ciphers import (
+from cifrados_clasicos import (
     cesar_descifrar,
     decimado_descifrar,
     afin_descifrar,
 )
 
 DIRECTORIO_SALIDA = Path("archivos_descifrados")
-
-# Llaves validas para Decimado
-LLAVES_DECIMADO = [a for a in range(1, 256) if math.gcd(a, 256) == 1]
+LLAVES = [a for a in range(1, 256) if math.gcd(a, 256) == 1]
 
 
 # FUNCIONES AUXILIARES
@@ -132,7 +130,7 @@ def decimado_fuerza_bruta(datos: bytes, nombre_archivo: str) -> bool:
 
     cabecera = datos[:16]
 
-    for a in LLAVES_DECIMADO:
+    for a in LLAVES:
         descifrado_cabecera = decimado_descifrar(cabecera, a)
         formato = detectar_formato(descifrado_cabecera)
         if formato:
@@ -160,10 +158,10 @@ def afin_fuerza_bruta(datos: bytes, nombre_archivo: str) -> bool:
     """
     print("\nINTENTO Afin\n")
     
-    combinaciones = len(LLAVES_DECIMADO) * 256
+    combinaciones = len(LLAVES) * 256
     cabecera = datos[:16]
 
-    for a in LLAVES_DECIMADO:
+    for a in LLAVES:
         for c in range(256):
             descifrado_cabecera = afin_descifrar(cabecera, a, c)
             formato = detectar_formato(descifrado_cabecera)

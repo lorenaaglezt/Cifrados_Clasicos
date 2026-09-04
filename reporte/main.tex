@@ -1,6 +1,5 @@
 \documentclass[12pt, a4paper]{article}
 
-% ─── Paquetes ────────────────────────────────────────────────────────────────
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[spanish,es-noquoting]{babel}
@@ -95,6 +94,7 @@ criptografía moderna. Saber aplicar estos cifrados clásicos permite construir 
 aplicando congruencias y aritmética modular. Por otro lado, el enfrentarse a un escenario de descifrado, como el que plantea 
 esta práctica, nos permite desarrollar conocimientos sobre el manejo de bytes y las firmas de archivo.
 
+% -------------------------------------------------------------------------------------------------------------------
 
 \section{Desarrollo}
 
@@ -102,156 +102,425 @@ El desarrollo de esta práctica consta de distintas etapas: los cifrados, las fi
 
 \subsection{Cifrados}
 
-\textbf{Base64}
+Los cifrados implementados en esta práctica se encuentran en el archivo \texttt{cifrados\_clasicos.py}.
+A continuación se describe el procedimiento de desarrollo de cada uno.
 
-Correspondiente a la codificación Base64 se implementó el archivo \texttt{base64\_codec.py}, el cual funciona como codificador
-y decodificador Base64. Primero, la función \texttt{base64\_encode} se encarga de transformar los datos originales en su representación
-Base64, en nuestra implementación se espera operar sobre la secuencia de bits ya representada como cadena de texto. Es importante
-notar que la información de codifica en bloques de 6 bits y de ser necesario se reagrupa la secuencia completa de bits para poder
-mapear cada bloque a un valor numérico entre 0 y 63, que luego se traduce a un carácter del alfabeto definido (la variable \texttt{CARACTERES}).
+\subsubsection*{Cifrado César}
 
-Además, los caracteres sobrantes al final se sustituyen por '=' que fueron los de relleno en la reorganización de la secuencia de bits.
+El cifrado César es un cifrado de sustitución. De acuerdo a [Notas Galaviz], si en un mensaje original se
+encuentra el símbolo de índice $i$ de un alfabeto de $n$ símbolos y al cifrarlo se le substituye por el símbolo
+de índice $j$ del alfabeto desplazado de $k$ lugares a la derecha, entonces podemos simbolizar el cifrado como:
 
-Por otro lado, la función \texttt{base64\_decode} hace lo inverso y permite recuperar los datos originales. Contrario a la codificación,
-se eliminan los '=' y para cada carácter válido se encuentra su posición dentro del alfabeto definido para Base64 y se traduce a su 
-equivalente de seis bits. Estos bloques se concatenan de forma que constituyen la cadena binaria completa. Nuevamente se reagrupan
-para formar la secuencia de bytes original (que constan de 8 bits y no 6).
+\[
+    j \equiv (i + k) \pmod n
+\]
 
-Ambas funciones trabajan de manera que deben garantizar que la información se transforme y recupere de manera íntegra.
+Dado que en esta práctica haremos el manejo de arhivos a nivel de bytes, el alfabeto que usaremos está compuesto 
+por los valores de los bytes, es decir, $n = 256$ y los caracteres son los valores enteros en el rango $[0, 255]$. 
+La llave $k$ es un entero en el rango $[0, 255]$.
 
-\begin{figure}[H]
-    \centering
-    \begin{subfigure}[b]{0.45\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{imgs/base64_encode.png}
-        \caption{Codificación Base64}
-        \label{fig:base64_encode}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.45\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{imgs/base64_decode.png}
-        \caption{Decodificación Base64}
-        \label{fig:base64_decode}
-    \end{subfigure}
-    \caption{Proceso de codificación y decodificación en Base64.}
-    \label{fig:base64}
-\end{figure}
+\begin{itemize}
+
+    \item \textbf{Cifrado:} La función \texttt{cesar\_cifrar(data, k)} recibe la secuencia de bytes \texttt{data}
+y la llave entera $k$. Se itera sobre todos los bytes del mensaje (de acuerdo a la definición anterior) y se construye 
+el resultado como un objeto \texttt{bytes}:
+
+\begin{verbatim}
+resultado = bytes((byte + k) % 256 for byte in data)
+\end{verbatim}
+
+    \item \textbf{Descifrado:} La función \texttt{cesar\_descifrar(data, k)} aplica lo inverso del cifrado y para ello
+    se resta $k$ a cada byte del mensaje (regresando el mismo número de lugares que se avanzó en el cifrado). 
+    De manera análoga la implementación es:
+
+\begin{verbatim}
+resultado = bytes((byte - k) % 256 for byte in data)
+\end{verbatim}
+
+\end{itemize}
+
+\subsubsection*{Inverso modular}
+
+Como parte de los cifrados Decimado y Afín es necesario calcular el
+inverso modular de la llave $a \in \mathbb{Z}_{256}$ respecto del módulo 256.
+El inverso modular $x$ de $a$ módulo $m$ es el entero que satisface:
+
+\[
+    (a \cdot x) \equiv 1 \pmod m
+\]
+
+La función \texttt{inverso\_modular(a, m)} se calcula mediante el
+algoritmo de Euclides extendido:
+
+\begin{verbatim}
+m_original = m
+x0 = 1
+x1 = 0
+while m != 0:
+    cociente = a // m
+    a, m = m, a % m
+    x0, x1 = x1, x0 - cociente * x1
+if a != 1:
+    raise ValueError("Si no existe el inverso modular")
+return x0 % m_original
+\end{verbatim}
+
+A continuación veremos que su uso es imperativo en los otros cifrados.
+
+\subsubsection*{Cifrado Decimado}
+
+Este esquema es similar al cifrado César, pero ahora el símbolo que reemplaza al $i$-ésimo es obtenido
+multiplicando $i$ por algún número, es decir, el $i$-ésimo símbolo es reemplazado en el texto cifrado por
+el $j$-ésimo con $j = (ki) \bmod n$. Para que el cifrado sea válido en nuestros bytes y cumpla con ser 
+una función biyectiva, es necesario elegir el factor de decimación de modo que sea primo relativo a $n = 256$.
+
+\begin{itemize}
+    \item \textbf{Cifrado:} La función \texttt{decimado\_cifrar(data, a)} multiplica cada byte
+    del mensaje por la llave $a$ y reduce módulo 256. La lógica es la siguiente:
+\begin{enumerate}
+    \item Realizamos $a \bmod 256$ para que la llave esté en el rango $[0, 255]$.
+    \item Verificamos que $\gcd(a, 256) = 1$ llamando a \texttt{inverso\_modular(a, 256)}. Esto nos 
+            asegura de que la transformación sea biyectiva. De no cumplirse, no sería válido el cifrado
+            porque no nos asegura que la función de cifrado sea biyectiva y por tanto el descifrado no
+            sería posible.
+    \item Aplicamos la transformación de multiplicación byte a byte.
+\end{enumerate}
+
+\begin{verbatim}
+a = a % 256
+inverso_modular(a, 256)
+resultado = bytes((byte * a) % 256 for byte in data)
+\end{verbatim}
+
+    \item \textbf{Descifrado:} La función \texttt{decimado\_descifrar(data, a)} invierte el cifrado. Contrario
+    al cifrado César, se multiplica por el inverso modular de $a$ módulo 256 para recuperar el mensaje original.
+    La lógica implementada es:
+    \begin{enumerate}
+        \item Aplicamos $a \pmod {256}$ para que esté en el rango $[0, 255]$.
+        \item Calculamos el inverso modular de $a$ mediante \texttt{inverso\_modular(a, 256)}.
+        \item Aplicamos la transformación de multiplicación inversa byte a byte.
+    \end{enumerate}
+
+\begin{verbatim}
+a = a % 256
+inverso = inverso_modular(a, 256)
+resultado = bytes((byte * inverso) % 256 for byte in data)
+\end{verbatim}
+
+
+\end{itemize}
+
+\textbf{Observación:} Para que el cifrado sea reversible, $a$ debe ser coprimo con 256, es decir,
+$\gcd(a, 256) = 1$. En el programa se define \texttt{LLAVES} como el conjunto de llaves válidas. En el 
+intervalo $[1, 255]$ hay exactamente $\phi(256) = 128$ valores válidos.
+
+\subsubsection*{Cifrado Afín}
+
+Este cifrado consiste de una combinación de los dos cifrados anteriores donde la regla de sustitución está dada por
+$j = (ri + k) \pmod n$, donde $i,r,k \in \{0, \dots, n-1\}$. Recordando que para nuestro caso $n=256$: $i,r,k \in \{0, \dots, 255\}$. 
+Igual que en el cifrado Decimado, también necesitamos que la transformación sea biyectiva, y por tanto, $r$ debe ser coprimo con $n=256$.
+
+\begin{itemize}
+    \item \textbf{Cifrado:} La función \texttt{afin\_cifrar(data, a, b)} aplica a cada byte la transformación que
+    acabamos de mencionar. La lógica se sigue de:
+
+\begin{enumerate}
+    \item Nos aseguramos que las llaves estén en $\{0,  \cdots, 255\}$: $a \bmod 256$, $b \bmod 256$.
+    \item Verificamos que $\gcd(a, 256) = 1$ para que la función de cifrado sea biyectiva.
+    \item Aplicamos la transformación definida byte a byte.
+\end{enumerate}
+
+\begin{verbatim}
+a = a % 256
+b = b % 256
+inverso_modular(a, 256)
+resultado = bytes((a * byte + b) % 256 for byte in data)
+\end{verbatim}
+    
+    \item \textbf{Descifrado:} La función \texttt{afin\_descifrar(data, a, b)} invierte la transformación afín.
+Considerando que en el cifrado $j = (a \cdot i + b) \bmod 256$ se despeja $i$ que es el dato original que queremos
+recuperar mediante la siguiente expresión:
+
+\[
+    i = (a^{-1} \cdot (j - b)) \bmod 256
+\]
+
+De modo que la lógica de descifrado está dada por:
+\begin{enumerate}
+    \item Obtenemos los valores de las llaves $a \bmod 256$ y $b \bmod 256$.
+    \item Calculamos el inverso modular $a^{-1}$ de $a$ módulo 256.
+    \item Aplicamos la transformación inversa byte a byte.
+\end{enumerate}
+
+\begin{verbatim}
+a = a % 256
+b = b % 256
+inverso = inverso_modular(a, 256)
+resultado = bytes((inverso * (byte - b)) % 256 for byte in data)
+\end{verbatim}
+\end{itemize}
+
+\subsubsection*{Base64}
+
+En esta codificación se convierte la secuencia de bytes en una secuencia de caracteres (en este caso ASCII),
+fue implementada en el archivo \texttt{base64.py}. La idea es que tres valores de byte de datos se codifican en
+cuatro valores Base64.
+
+Primero es importante mencionar que el alfabeto de 64 caracteres se definió por el alfabeto:
+
+\begin{verbatim}
+CARACTERES = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+\end{verbatim}
+
+Cada posición $i \in [0, 63]$ corresponde a un bloque de 6 bits con valor $i$.
+
+\begin{itemize}
+    \item \textbf{Codificación:} La función \texttt{base64\_encode} recibe una cadena binaria y aplica el siguiente
+    procedimiento:
+
+    \begin{enumerate}
+        \item Determinar cuántos bytes completos de 3 caracteres forman la entrada. Determinando si la longitud es o no
+        múltiplo de $3$, se calcula cuántos caracteres de relleno son necesarios.
+
+\begin{verbatim}
+completo = len(data) % 3
+p = 0 if completo == 0 else (3 - completo)
+\end{verbatim}
+
+    \item Se rellena hasta que la longitud sea múltiplo de 3, y luego cada byte se convierte a su representación 
+    binaria.
+    
+\begin{verbatim}
+data_padded = data + b"\x00" * p
+bits = "".join(format(b, "08b") for b in data_padded)
+\end{verbatim}
+
+    \item Recorremos la cadena binaria en bloques de 6 bits y se transforman a enteros en base 2 (como índices) 
+    para obtener el caracter correspondiente Base64 usando el alfabeto ya mencionado.
+
+\begin{verbatim}
+res = "".join(CARACTERES[int(data[i:i+6], 2)]
+              for i in range(0, len(data), 6))
+\end{verbatim}
+
+    \item Finalmente, si $p > 0$, sustituimos los últimos $p$ caracteres por \texttt{'='}.
+
+\begin{verbatim}
+if p > 0:
+    res = res[:-p] + ("=" * p)
+\end{verbatim}
+
+    \end{enumerate}
+
+
+    \item \textbf{Decodificación:} Para poder decodificar el procedimiento anterior, se implementó la función
+    \texttt{base64\_decode} que recibe la cadena obtenida en Base64 y realiza el siguiente procedimiento para 
+    recuperar los bytes:
+
+    \begin{enumerate}
+    \item Mediante un diccionario se asocia cada caracter del alfabeto el índice numérico de 6 bits.
+
+\begin{verbatim}
+BUSQUEDA = {c: i for i, c in enumerate(CARACTERES)}
+\end{verbatim}
+
+    \item Se eliminan los caracteres de relleno '=' de la cadena.
+
+\begin{verbatim}
+padding = encoded.count("=")
+word = encoded.replace("=", "")
+\end{verbatim}
+
+    \item Se transforman los caracteres a los índices correspondientes.
+
+\begin{verbatim}
+vals = [BUSQUEDA[c] for c in word if c in BUSQUEDA]
+\end{verbatim}
+
+    \item Se transforma a múltiplos de 4 rellenando con ceros, esto porque cada 4 bloques de 6 bits forman
+    exactamente $4 \times 6 = 24$ bits (3 bytes).
+
+\begin{verbatim}
+while len(vals) % 4 != 0:
+    vals.append(0)
+\end{verbatim}
+
+    \item Con desplazamientos bit a bit, por cada bloque de 4 valores se une unn entero de 24 bits,
+    lo que nos permite formar los 3 bytes que lo formaron desde un inicio:
+
+\begin{verbatim}
+result = bytearray()
+for i in range(0, len(vals), 4):
+    n = (vals[i] << 18) | (vals[i+1] << 12) | (vals[i+2] << 6) | vals[i+3]
+    result.append((n >> 16) & 0xFF)
+    result.append((n >> 8) & 0xFF)
+    result.append(n & 0xFF)
+\end{verbatim}
+
+    \item Se eliminan los bytes de relleno que habíamos añadido en la codificación.
+
+\begin{verbatim}
+if padding:
+    del result[-padding:]
+\end{verbatim}
+
+    \end{enumerate}
+\end{itemize}
+
 
 \subsection{Firmas de Archivos}
 
-Para esta etapa de la práctica se implementó el archivo \texttt{magic\_bytes.py} que tiene como propósito la identificación del formato real de
-un archivo a partir de su contenido binario. Dado que las extensiones de los archivos pueden ser modificadas, los formatos binarios incluyen
-al inicio del archivo una secuencia fija de bytes que facilitan la identificación.
+Para esta etapa de la práctica se implementó el archivo \texttt{magic\_bytes.py},
+cuyo propósito es identificar el formato real de un archivo a partir de su
+contenido binario. Dado que las extensiones de los archivos pueden ser alteradas, 
+los formatos binarios incluyen al inicio del archivo una secuencia fija de bytes 
+que permite identificar el formato.
 
-Definimos un diccionario \texttt{MAGIC\_BYTES\_HEX} que mapea la representación hexadecimal de cada firma a su formato. Mediante la función
-\texttt{detectar\_formato} comparamos el contenido del archivo con las firmas conocidas. Ya sea que se reciba un flujo de datos
-o una secuencia de bytes, se leen únicamente los primeros 16 bytes del archivo, los cuales pueden contener cualquiera de las firmas
-registradas.
+Como parte de la implementación se definió el diccionario \texttt{MAGIC\_BYTES\_HEX} 
+que mapea la representación hexadecimal de cada firma al nombre de su formato:
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{imgs/magic_bytes.png}
-    \caption{Diccionario de firmas de archivos en \texttt{magic\_bytes.py}.}
-    \label{fig:magic_bytes}
-\end{figure}
+\begin{verbatim}
+MAGIC_BYTES_HEX = {
+    "89504e470d0a1a0a": "png",
+    "ffd8ff":           "jpg",
+    "424d":             "bmp",
+    "494433":           "mp3",
+    "fffb":             "mp3",
+    "4f676753":         "ogg",
+    "0000001866747970": "mp4",
+    "1a45dfa3":         "mkv",
+    "504b0304":         "docx",
+    "25504446":         "pdf",
+    "65707562":         "epub",
+}
+RIFF = "52494646"
+\end{verbatim}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{imgs/detectar_formato.png}
-    \caption{Implementación de la función \texttt{detectar\_formato}.}
-    \label{fig:detectar_formato}
-\end{figure}
+Además, se definió la constante \texttt{RIFF = "52494646"} para manejar
+de forma especial los formatos WAV y AVI, que comparten los mismos 4 bytes
+iniciales \texttt{52 49 46 46}.
 
-Una observación importante es que los formatos WAV y AVI comparten los mismos 4 bytes iniciales, \texttt{52 49 46 46}, por lo que no es posible distinguirlos
-únicamente con el encabezado principal. Para ello, cuando se detecta la firma RIFF se inspeccionan los bytes 8 a 11 del archivo y se identifican
-correctamente estos formatos.
+La función \texttt{detectar\_formato(data)} recibe el contenido binario de un
+archivo y determina su formato. El procedimiento es el siguiente:
 
-Por otro lado, \texttt{es\_archivo\_valido} fue implementada para verificar si un archivo corresponde a un formato específico. En lugar de
-indicar qué formato fue detectado, devuelve un valor booleano que confirma si el resultado coincide con el formato esperado (esto porque
-no podemos confiarnos de la extensión que vemos superficialmente).
+\begin{enumerate}
+    \item Se extraen los primeros 16 bytes del archivo, tanto para flujos
+          de datos (objetos con método \texttt{read}) como para secuencias de bytes:
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{imgs/es_archivo_valido.png}
-    \caption{Implementación de la función \texttt{es\_archivo\_valido}.}
-    \label{fig:es_archivo_valido}
-\end{figure}
+\begin{verbatim}
+if hasattr(data, 'read'):
+    start_pos = data.tell() if hasattr(data, 'tell') else 0
+    bytes_data = data.read(16)
+    if hasattr(data, 'seek'):
+        data.seek(start_pos)
+else:
+    bytes_data = data[:16]
+\end{verbatim}
+
+    \item Los bytes extraídos se convierten a su representación hexadecimal en minúsculas:
+
+\begin{verbatim}
+hexbytes = bytes_data.hex()
+\end{verbatim}
+
+    \item Si los primeros 4 bytes corresponden a RIFF (\texttt{52494646}), no es posible
+          distinguir WAV de AVI y se inspeccionan los bytes 8 a 11 del archivo. Si no coinciden con alguno, 
+          devuelve \texttt{None}:
+
+\begin{verbatim}
+if hexbytes.startswith(RIFF) and len(bytes_data) >= 12:
+    subtype = bytes_data[8:12]
+    if subtype == b"WAVE": return "wav"
+    if subtype == b"AVI ": return "avi"
+    return None
+\end{verbatim}
+
+    \item Se itera sobre el diccionario \texttt{MAGIC\_BYTES\_HEX}. Al encontrar una
+          coincidencia devuelve el formato correspondiente:
+
+\begin{verbatim}
+for magic_hex, formato in MAGIC_BYTES_HEX.items():
+    if hexbytes.startswith(magic_hex):
+        return formato
+return None
+\end{verbatim}
+
+    \item Si ninguna firma coincide, la función retorna \texttt{None}.
+\end{enumerate}
 
 \subsection{Manipulación de bytes}
 
-Por último, \texttt{archivos\_bytes.py} fue implementado para manejar las operaciones de entrada y salida a nivel de bytes,
-sirviendo de soporte para los cifrados, la codificación Base64 y la detección de formatos. Define tres funciones:
+El archivo \texttt{archivos\_bytes.py} fue implementado para manejar las operaciones
+de entrada a nivel de bytes.
+
+La función \texttt{leer\_archivo(ruta)} recibe la ruta de un archivo y devuelve su contenido 
+completo como un objeto \texttt{bytes}. Para ello comprueba que que el archivo existe en la ruta
+recibida y luego se abre el archivo en modo binario.
+
+El uso del modo binario es necesario ya que los cifrados
+operan directamente sobre los valores numéricos de cada byte (0--255).
+
+\subsection{Descifrador de Archivos}
+
+Después de todas las implementaciones anteriores se implementó el programa \texttt{main.py} que
+integra el proceso de descifrado de un archivo del cual no conocemos su cifrado ni sus llaves. 
+Por lo que para poder descifrarlo se aplicó fuerza bruta probando algoritmo por algoritmo con 
+todas las posibles llaves, esto hasta encontrar el correcto si es que fue cifrado con alguno de los
+que implementamos.
+
+Para mantener el código organizado se definieron dos funciones auxiliares:
 
 \begin{itemize}
-    \item \texttt{leer\_archivo(ruta)}: Verifica que el archivo exista en la ruta indicada y, de ser así, lo abre en
-    modo binario y devuelve su contenido completo como una secuencia de bytes.
-
-    \item \texttt{escribir\_bytes\_archivo(ruta, contenido)}: Recibe una secuencia de bytes y la escribe en el archivo
-    de destino. Si el directorio especificado en la ruta no existe, lo crea automáticamente antes de escribir.
-
-    \item \texttt{guardar\_descifrado(descifrado, nombre, extension)}: Construye la ruta de salida con el formato
-    \texttt{<nombre>\_descifrado.<extension>}, invoca a \texttt{escribir\_bytes\_archivo} para guardar el contenido
-    y retorna la ruta completa del archivo generado.
+    \item \texttt{guardar(datos, nombre\_base, formato)}: Para guardar los archivos que se descifren correctamente.
+    \item \texttt{resultado(cifrado, llave, formato, ruta)}: Para imprimir un resumen del descifrado.
 \end{itemize}
 
-\subsection{Flujo de Trabajo}
-
-Como resultado de las implementaciones anteriores, se diseñó el programa \texttt{main.py} que integra todos los módulos para
-intentar descifrar un archivo cuyo método de cifrado y llave son desconocidos. El programa aplica un enfoque de
-fuerza bruta, esto es, prueba distintos algoritmos de descifrado sobre el contenido binario del archivo y,
-tras cada intento, verifica si el resultado tiene una firma de archivo reconocida.
-
-\subsubsection*{Funciones auxiliares}
-
-Para mantener el código organizado, se definieron funciones auxiliares que encapsulan tareas repetitivas:
+Como mencionamos antes, aplicamos fuerza bruta para cada cifrado. Para hacerlo más efectivo, en cada intento
+se opera sobre los primeros 16 bytes para verificar las firmas antes de descifrar el archivo completo. De esta manera,
+tenemos una función de fuerza bruta por cada cifrado, en todas estas funciones se intenta descifrar los primeros
+16 bytes y si coincide con alguna firma, se descifra el archivo completo (se guarda). Lo que cambia entre ellas es el espacio de 
+llaves. Por lo que estas funciones son:
 
 \begin{itemize}
-    \item \texttt{guardar(datos, nombre\_base, formato)}: Crea el directorio de salida si no existe y escribe el
-    archivo descifrado asignándole el nombre \texttt{<nombre\_base>\_descifrado.<formato>}. Retorna la ruta del
-    archivo guardado.
+    \item \textbf{Base64} \texttt{base64\_fuerza\_bruta}: Interpreta los bytes como texto ASCII y los decodifica,
+    no hay llaves para iterar.
 
-    \item \texttt{resultado(cifrado, llave, formato, ruta)}: Imprime en consola el resumen del descifrado exitoso:
-    el nombre del algoritmo utilizado, la llave encontrada, el formato del archivo recuperado y la ruta donde fue guardado.
+    \item \textbf{César} \texttt{cesar\_fuerza\_bruta}: Itera sobre todas las posibles llaves $k \in \{0, 1, \dots, 255\}$.
+
+    \item \textbf{Decimado} \texttt{decimado\_fuerza\_bruta}: Itera sobre todas las llaves coprimas con 256.
+
+    \item \textbf{Afín} \texttt{afin\_fuerza\_bruta}: Itera sobre todas las posibles llaves $(a, c)$ con
+    \texttt{a} coprimo con 256.
 \end{itemize}
 
-\subsubsection*{Descifrado por fuerza bruta}
+Como resultado final, la función \texttt{descifrar\_archivo(ruta\_cifrado)} une toda la lógica de descifrado
+que hemos ido desarrollando:
 
-Cada método de descifrado se implementó de manera independiente.
-El espacio de búsqueda de cada método es el siguiente:
+\begin{enumerate}
+    \item Verificar que la ruta recibida corresponde a un archivo existente.
+          Si no existe, terminar con error.
+    \item Leer el contenido binario completo con \texttt{leer\_archivo}.
+    \item Iterar sobre la lista de métodos en orden:
+\begin{verbatim}
+METODOS_CIFRADO = [
+    base64_fuerza_bruta,
+    cesar_fuerza_bruta,
+    decimado_fuerza_bruta,
+    afin_fuerza_bruta,
+]
+for metodo in METODOS_CIFRADO:
+    if metodo(datos, nombre_base):
+        break
+\end{verbatim}
+    \item El primer método que retorne \texttt{True} detiene la búsqueda. De otro modo, se concluye que 
+          el archivo no fue cifrado con ninguno de los métodos implementados.
+\end{enumerate}
 
-\begin{itemize}
-    \item \textbf{Base64} (\texttt{base64\_fuerza\_bruta}): No hay llave que iterar. Se interpreta el contenido del
-    archivo como texto ASCII, se decodifica con \texttt{base64\_decode} y se verifica el resultado.
+El programa se ejecuta desde la terminal de la siguiente forma:
 
-    \item \textbf{César} (\texttt{cesar\_fuerza\_bruta}): El cifrado César sobre bytes aplica el corrimiento
-    $C_i = (P_i + k) \bmod 256$, por lo que el espacio de llaves es $k \in \{0, 1, \dots, 255\}$, es decir,
-    256 posibles llaves.
-
-    \item \textbf{Decimado} (\texttt{decimado\_fuerza\_bruta}): El cifrado de decimación opera como
-    $C_i = (a \cdot P_i) \bmod 256$. Para que la función sea invertible, $a$ debe ser coprimo con 256
-    (es decir, $\gcd(a, 256) = 1$). Dado que $256 = 2^8$, los valores válidos de $a$ son los impares en
-    $\{1, \dots, 255\}$, lo que da $\phi(256) = 128$ llaves posibles. Estos valores se precomputan al
-    inicio del programa en la lista \texttt{LLAVES\_DECIMADO}.
-
-    \item \textbf{Afín} (\texttt{afin\_fuerza\_bruta}): El cifrado afín combina los dos anteriores:
-    $C_i = (a \cdot P_i + c) \bmod 256$. El espacio de búsqueda es el producto cartesiano de las 128
-    llaves válidas de $a$ (coprimas con 256) y los 256 valores posibles de $c$, lo que resulta en
-    $128 \times 256 = 32\,768$ combinaciones.
-\end{itemize}
-
-\subsubsection*{Proceso principal}
-
-Con todas las implementaciones anteriores, se valida que la ruta recibida
-corresponde a un archivo existente y se lee su contenido binario. Luego itera sobre
-los métodos disponibles y ejecuta cada uno en secuencia hasta que uno termine exitosamente.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{imgs/descifrar_archivo.png}
-    \caption{Función principal \texttt{descifrar\_archivo} que orquesta el proceso.}
-    \label{fig:descifrar_archivo}
-\end{figure}
+\begin{verbatim}
+python src/main.py <ruta_del_archivo_cifrado>
+\end{verbatim}
 
 % -------------------------------------------------------------------------------------------------------------------
 
@@ -360,6 +629,20 @@ biyectiva en $\mathbb{Z}_n$ es que $\gcd(k, n) = 1$, es decir, que $k$ y $n$ sea
 % -------------------------------------------------------------------------------------------------------------------
 
 \section{Conclusiones}
+
+Como resultado de esta práctica consideramos importante lo que aprendimos sobre estos cifrados porque forman parte de la 
+historia en la Criptografía y son la base del desarrollo de cifrados más complejos que se usan hoy en día. Por otra parte,
+consideramos que el uso de estos cifrados ya no es tan recomendado debido a la simplicidad de los mismos, pues son
+únicamente algoritmos de sustitución y como hemos analizado, conociendo el espacio de las llaves puede ser descifrado.
+Así también, fue enriquecedor el análisis del álgebra que sustenta los cifrados, pues nos ayuda a entender mejor como funcionan.
+
+Un reto dentro del desarrollo fue acotar el intento de descifrado por fuerza bruta, pues al inicio tomaba demasiado tiempo
+y no concluían algunos archivos. Por ello se decidió iniciar con las firmas de los archivos (los primeros 16 bytes) para poder
+ir avanzando un poco más rápido. 
+
+Así también, considerar el caso de los formatos WAV y AVI por separado fue algo que al inicio contemplamos integrarlos en un 
+mismo diccionario, pero debido a que se terminarían sobreescribiendo sólo se identificaría uno de los dos, por ello fue 
+necesario separarlos del diccionario.
 
 % -------------------------------------------------------------------------------------------------------------------
 

@@ -49,17 +49,3 @@ def detectar_formato(data: bytes) -> str | None:
             return formato
 
     return None
-
-def es_archivo_valido(data: bytes, formato_esperado: str) -> bool:
-    """
-    Verifica si un archivo es del formato esperado
-
-    Params:
-        data: Contenido binario del archivo
-        formato_esperado: Formato esperado
-
-    Returns:
-        True si el archivo es del formato esperado, False en caso contrario
-    """
-    formato_detectado = detectar_formato(data)
-    return formato_detectado == formato_esperado
