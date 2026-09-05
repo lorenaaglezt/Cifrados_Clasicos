@@ -34,8 +34,7 @@ def detectar_formato(data: bytes) -> str | None:
 
     hexbytes = bytes_data.hex()
 
-    # Para el caso de RIFF, WAV y AVI comparten los primeros 4 bytes.
-    # Los bytes 8-11 indican el subtipo sea wav o avi
+    # Los bytes 8-11 indican wav o avi
     if hexbytes.startswith(RIFF) and len(bytes_data) >= 12:
         subtype = bytes_data[8:12]
         if subtype == b"WAVE":

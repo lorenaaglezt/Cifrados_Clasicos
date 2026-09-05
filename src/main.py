@@ -44,10 +44,10 @@ def resultado(cifrado: str, llave: str, formato: str, ruta: Path) -> None:
         formato: Formato del archivo descifrado
         ruta: Ruta del archivo descifrado
     """
-    print(f"Cifrado : {cifrado}")
+    print(f"RESULTADO DE DESCIFRADO {cifrado}\n")
     print(f"Llave : {llave}")
-    print(f"Formato : {formato}")
-    print(f"Ruta : {ruta}")
+    print(f"Formato identificado: {formato}")
+    print(f"Ruta de archivo descifrado: {ruta}")
 
 
 # FUERZA BRUTA EN LOS CIFRADOS
@@ -202,6 +202,8 @@ def descifrar_archivo(ruta_cifrado: str) -> None:
     nombre_base = ruta.stem  # nombre sin extension
 
     print(f"\nArchivo : {ruta}\n")
+
+    print("\nIniciando proceso de descifrado.\n")
 
     datos = leer_archivo(str(ruta))
 

@@ -19,8 +19,3 @@ __pycache__/
 venv/
 env/
 .env
-
-# Archivos de sistema / IDE
-.DS_Store
-.vscode/
-.idea/

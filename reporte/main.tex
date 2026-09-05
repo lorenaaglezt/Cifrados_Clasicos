@@ -32,10 +32,14 @@
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small Computación Concurrente}
-\fancyhead[R]{\small Introducción al Cómputo Concurrente}
+\fancyhead[L]{\small Criptografía y Seguridad}
+\fancyhead[R]{\small Cifrados Clásicos}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
+
+
+\usepackage{url}
+\usepackage[colorlinks=true, urlcolor=blue, linkcolor=blue, citecolor=blue]{hyperref}
 
 \begin{document}
 
@@ -107,7 +111,7 @@ A continuación se describe el procedimiento de desarrollo de cada uno.
 
 \subsubsection*{Cifrado César}
 
-El cifrado César es un cifrado de sustitución. De acuerdo a [Notas Galaviz], si en un mensaje original se
+El cifrado César es un cifrado de sustitución. De acuerdo a \cite{notas_galaviz}, si en un mensaje original se
 encuentra el símbolo de índice $i$ de un alfabeto de $n$ símbolos y al cifrarlo se le substituye por el símbolo
 de índice $j$ del alfabeto desplazado de $k$ lugares a la derecha, entonces podemos simbolizar el cifrado como:
 
@@ -642,10 +646,44 @@ ir avanzando un poco más rápido.
 
 Así también, considerar el caso de los formatos WAV y AVI por separado fue algo que al inicio contemplamos integrarlos en un 
 mismo diccionario, pero debido a que se terminarían sobreescribiendo sólo se identificaría uno de los dos, por ello fue 
-necesario separarlos del diccionario.
+necesario separarlos del diccionario y aplicar una lógica distinta por aparte.
+
+Por último, otro reto enfrentado fue al momento de implementar la codificación Base64, nuestra versión inicial del programa tardaba
+mucho tiempo y se fue modificando poco a poco para que pudiera terminar el programa. Antes se habían implementado muchos ciclos anidados
+que retardaban mucho el proceso (pues funcionaba con entradas pequeñas pero conforme aumentaba, tardaba mucho más), por lo que nos 
+atoramos en esta parte para que se pudiera decodificar exitosamente.
+
+Como resultado pudimos implementar el programa antes desarrollado y aprender sobre estos cifrados clásicos y la codificación Base64.
 
 % -------------------------------------------------------------------------------------------------------------------
 
-\section{Referencias}
+
+\begin{thebibliography}{9}
+
+\bibitem{notas_galaviz}
+Galaviz Casas, J.
+\textit{Introducción a la Criptología}.
+2010.
+Disponible en: \url{https://drive.google.com/file/d/1FxSX0-ymteWoxSPeR_3w7Mxd2H11bIRe/view}
+
+\bibitem{medium_article}
+Jens@Fivesec.
+\textit{Revisiting the Basics: Implementing Base64 from Scratch in pure C}.
+Medium, 2024.
+Disponible en: \url{https://medium.com/@js_9757/revisiting-the-basics-implementing-base64-from-scratch-in-pure-c-c6985fb08420}
+
+\bibitem{base64}
+Base64 Algorithm Description.
+Disponible en: \url{https://www.sunshine2k.de/articles/coding/base64/understanding_base64.html}
+
+\bibitem{magic_bytes}
+Magic Bytes.
+Disponible en: \url{https://en.wikipedia.org/wiki/List_of_file_signatures}
+
+\bibitem{magic_bytes2}
+Identificador de Archivos (Magic Bytes).
+Disponible en: \url{https://tool.lu/es_ES/magicbytes/}
+
+\end{thebibliography}
 
 \end{document}
